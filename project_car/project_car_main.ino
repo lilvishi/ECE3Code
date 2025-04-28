@@ -1,4 +1,4 @@
-// project_car.
+// project_car_main.
 // 
 // * 
 // *    
@@ -15,21 +15,44 @@
 
 // define variables + arrays
 const int sensor_weight[8] = [-15,-14,-12,-8,8,12,14,15];
-int sensor_measured[8] = [0];
+uint16_t sensor_measured[8] = [0];
 
 // define pins
+const int left_nslp_pin=31; // nslp ==> awake & ready for PWM
+const int right_nslp_pin=11; // nslp ==> awake & ready for PWM
+const int left_dir_pin=29;
+const int right_dir_pin=30;
+const int left_pwm_pin=40;
+const int right_pwm_pin=39;
 
 // SETUP (program run once for initialization)
 void setup(){
     // set pin modes 
+    pinMode(left_nslp_pin,OUTPUT);
+    pinMode(left_dir_pin,OUTPUT);
+    pinMode(left_pwm_pin,OUTPUT);
+    pinMode(right_nslp_pin,OUTPUT);
+    pinMode(right_dir_pin,OUTPUT);
+    pinMode(right_pwm_pin,OUTPUT);
+
     // initialize pins
+    digitalWrite(left_dir_pin,LOW); // LOW vs. HIGH changes direction
+    digitalWrite(left_nslp_pin,HIGH);
+    digitalWrite(right_dir_pin,HIGH);
+    digitalWrite(right_nslp_pin,HIGH);
+
     // initialize serial communication
+    ECE3_Init();
+    Serial.begin(9600);
+
     // set base speed
 }
 
 // LOOP (program run continiously as car is on)
 void loop(){
     // read sensor Values
+    ECE3_read_IR(sensor_measured);
+
     // check for crosspiece
     // subtract 8 minimums
     // ratio 8 values to 1000
