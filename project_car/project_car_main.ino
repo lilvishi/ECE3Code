@@ -8,6 +8,8 @@
 // *  UID (Clara): 406392066
 // *  UID (Vaish):
 
+#include <ECE3.h> // Used for encoder functionality
+
 // DEFINE INITIAL VALUES
 // define constants
 
