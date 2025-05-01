@@ -84,6 +84,4 @@ int compute_error (int sens[8]){
 }
 
 // computes steering change according to error determined by weights on track
-void adjust_steering(int error){
-
-}
+void adjust_steeri
