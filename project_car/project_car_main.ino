@@ -12,15 +12,17 @@
 
 // DEFINE INITIAL VALUES
 // define constants
+const int baseSpeed = 25;
 
 // define variables + arrays
 const int sensor_weight[8] = [-15,-14,-12,-8,8,12,14,15];
 uint16_t sensor_measured[8] = [0];
 
+
 // define pins
-const int left_nslp_pin=31; // nslp ==> awake & ready for PWM
-const int right_nslp_pin=11; // nslp ==> awake & ready for PWM
-const int left_dir_pin=29;
+const int left_nslp_pin =31;     // nslp ==> awake & ready for PWM
+const int right_nslp_pin=11;    // nslp ==> awake & ready for PWM
+const int left_dir_pin  =29;
 const int right_dir_pin=30;
 const int left_pwm_pin=40;
 const int right_pwm_pin=39;
@@ -36,16 +38,18 @@ void setup(){
     pinMode(right_pwm_pin,OUTPUT);
 
     // initialize pins
-    digitalWrite(left_dir_pin,LOW); // LOW vs. HIGH changes direction
-    digitalWrite(left_nslp_pin,HIGH);
+    digitalWrite(left_dir_pin,HIGH);    // LOW vs. HIGH changes direction (HIGH = C, LOW = CC)
+    digitalWrite(left_nslp_pin,HIGH);  // make car vroom
     digitalWrite(right_dir_pin,HIGH);
     digitalWrite(right_nslp_pin,HIGH);
 
     // initialize serial communication
     ECE3_Init();
-    Serial.begin(9600);
+    Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
 
     // set base speed
+    analogWrite(left_pwm_pin,baseSpeed);
+    analogWrite(right_pwm_pin, baseSpeed);
 }
 
 // LOOP (program run continiously as car is on)
