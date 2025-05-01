@@ -3,12 +3,12 @@
 
 uint16_t sensorValues[8];
 // from calibration
-const int sensorMins[8] = [436,527,505,482,550,459,574,527];
-const int sensorMax[8] = [1895,1729,1490,877,1635,1606,1926,1973];
-const in calibrationWeight[8] = [-8,-4,-2,-1,1,2,4,8];
+const int sensorMins[8] = {436,527,505,482,550,459,574,527};
+const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
+const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 
 // va
-int sensorCalc[8] =[0];
+int sensorCalc[8] = {0};
 int calcError = 0;
 
 void setup()
@@ -21,8 +21,9 @@ void setup()
 
 void loop()
 {
+    calcError = 0;
   // read raw sensor values
-  ECE3_read_IR(sensorValues);
+    ECE3_read_IR(sensorValues);
 
     // subtract mins
   for(unsigned char i = 0; i < 8; i++){
@@ -41,6 +42,7 @@ void loop()
   calcError /= 4;
 
   Serial.print(calcError);
+  Serial.print('\n');
   
 
   delay(50);
