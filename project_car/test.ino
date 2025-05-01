@@ -19,7 +19,7 @@ const int right_dir_pin=30;
 const int left_pwm_pin=40;
 const int right_pwm_pin=39;
 
-const int baseSpeed = 0;
+int baseSpeed = 0;
 
 void setup(){
     // set pin modes 
@@ -69,12 +69,20 @@ void loop()
   calcError /= 4;
 
   Serial.print(calcError);
+  Serial.print('\n');
+  delay(250);
+
    
-  if ((calcError >= -100) || (calcError <= 100)){
-        base_speed = 25;
+  if ((calcError >= -500) && (calcError <= 500)){
+        Serial.print("IM MOVING!!! \n");
+        baseSpeed = 25;
   }
   else{
-    base_speed = 0;
+    Serial.print(";(( \n");
+    baseSpeed = 0;
   }
+      // set base speed
+    analogWrite(left_pwm_pin,baseSpeed);
+    analogWrite(right_pwm_pin, baseSpeed);
   
 }
