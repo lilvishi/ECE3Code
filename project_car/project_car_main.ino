@@ -15,7 +15,8 @@
 const int baseSpeed = 25;
 
 // define variables + arrays
-const int sensor_weight[8] = [-15,-14,-12,-8,8,12,14,15];
+const int base_speed[8] = [0];
+
 uint16_t sensor_measured[8] = [0];
 
 
@@ -38,8 +39,9 @@ void setup(){
     pinMode(right_pwm_pin,OUTPUT);
 
     // initialize pins
+    // default is forward
     digitalWrite(left_dir_pin,HIGH);    // LOW vs. HIGH changes direction (HIGH = C, LOW = CC)
-    digitalWrite(left_nslp_pin,HIGH);  // make car vroom
+    digitalWrite(left_nslp_pin,HIGH);   // make car vroom
     digitalWrite(right_dir_pin,HIGH);
     digitalWrite(right_nslp_pin,HIGH);
 
@@ -70,6 +72,7 @@ void loop(){
 
 // computes the error term by fusing each value according to values in sensor_weight
 int compute_error (int sens[8]){
+    // find min
     return       (sens[0]*sensor_weight[0] 
                 + sens[1]*sensor_weight[1]
                 + sens[2]*sensor_weight[2]
