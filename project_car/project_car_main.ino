@@ -74,11 +74,8 @@ void loop(){
 
 // HELPER FUNCTIONS
 
-// computes the error term by fusing each value according to values in calibrationWeight
-void compute_error (int sens[8]){
-    // read raw sensor values
-    ECE3_read_IR(sensorValues);
-
+// computes the error of array of 8 sensor inputs by fusing each value according to values in calibrationWeight
+void compute_error (int sensorValues[8]){
     // subtract mins
     for(unsigned char i = 0; i < 8; i++){
         sensorCalc[i] = sensorValues[i] - sensorMins[i];
