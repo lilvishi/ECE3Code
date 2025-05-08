@@ -12,6 +12,7 @@
 
 // DEFINE INITIAL VALUES
 // define constants
+const int 
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
@@ -21,9 +22,12 @@ const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 // define variables + arrays
 int sensorCalc[8] ={0};
 int calcError = 0;
+int Kp = 0;
+int prevError = 0;
 uint16_t sensor_measured[8] = {0};
 
-int baseSpeed = 25;
+int left_baseSpeed = 25;
+int right_baseSpeed = 25;
 
 // define pins
 const int left_nslp_pin =31;     // nslp ==> awake & ready for PWM
@@ -55,8 +59,8 @@ void setup(){
     Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
 
     // set base speed
-    analogWrite(left_pwm_pin,baseSpeed);
-    analogWrite(right_pwm_pin, baseSpeed);
+    analogWrite(left_pwm_pin,left_baseSpeed);
+    analogWrite(right_pwm_pin, right_baseSpeed);
 }
 
 // LOOP (program run continiously as car is on)
@@ -68,6 +72,7 @@ void loop(){
 
     // compute error
     compute_error(sensor_measured);
+
     // compute steering change command
     // add change to one wheel, subtract from other
 }
@@ -93,7 +98,15 @@ void compute_error (int sensorValues[8]){
 }
 
 // computes steering change according to error determined by weights on track
-void adjust_steer(){}
+void adjust_steer(int current_error){
+    if (current_error == 0) {
+        forward();}
+    else if(current_error < 0) {
+        turn_right();}
+    else{
+        turn_left();
+        }
+}
 
 // turns right
 void turn_right(){
@@ -104,4 +117,14 @@ void turn_right(){
 void turn_left(){
     digitalWrite(left_dir_pin,LOW); 
     digitalWrite(right_dir_pin,HIGH); 
+}
+// goes forward
+void forward(){
+    digitalWrite(left_dir_pin,HIGH); 
+    digitalWrite(right_dir_pin,HIGH); 
+}
+
+// calc initial kp
+void getKp(){
+
 }
