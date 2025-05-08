@@ -77,7 +77,7 @@ void loop(){
     compute_error(sensor_measured);
     now_time = millis();
     dt = now_time - last_time;
-    last_time = now_time();
+    last_time = now_time;
 
     // compute steering change command
     adjust_steer(calcError);            // adjust the steering
@@ -136,7 +136,7 @@ void forward(){
 }
 
 // calc initial PD
-void getPD(){
+int getPD(){
     double proportional = calcError;
     double derivative = (calcError-prevError)/dt;
     prevError = calcError;
