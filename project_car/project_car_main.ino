@@ -12,7 +12,9 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const int 
+const int Kp = 0.05; // determine experimentally
+const int Kd = 0.05;
+const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
