@@ -12,8 +12,7 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const int Kp = 0.05; // determine experimentally
-const int Kd = 0.05;
+const double Kp = 0.05; // determine experimentally
 const int errorMax = 2777;
 
 // min and max from calibration
@@ -53,9 +52,9 @@ void setup(){
 
     // initialize pins
     // default is forward
-    digitalWrite(left_dir_pin,HIGH);    // LOW vs. HIGH changes direction (HIGH = C, LOW = CC)
+    digitalWrite(left_dir_pin,LOW);    // LOW vs. HIGH changes direction (HIGH = C, LOW = CC)
     digitalWrite(left_nslp_pin,HIGH);   // make car vroom
-    digitalWrite(right_dir_pin,HIGH);
+    digitalWrite(right_dir_pin,LOW);
     digitalWrite(right_nslp_pin,HIGH);
 
     // initialize serial communication
@@ -76,15 +75,19 @@ void loop(){
 
     // compute error
     compute_error(sensor_measured);
-    now_time = millis();
-    dt = now_time - last_time;
-    last_time = now_time;
 
     // compute steering change command
-    adjust_steer(calcError);            // adjust the steering
+    //adjust_steer(calcError);            // adjust the steering
     int PDval = getPD();
+    Serial.print(left_baseSpeed);
+    Serial.print("\t");
     left_baseSpeed += PDval;
     right_baseSpeed -= PDval;
+    Serial.print(left_baseSpeed);
+    Serial.print("\t");
+    Serial.print(right_baseSpeed);
+    Serial.print("\n");
+    delay(500);
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
 
@@ -111,37 +114,8 @@ void compute_error (uint16_t sensorValues[8]){
     return;
 }
 
-// computes steering change according to error determined by weights on track
-void adjust_steer(int current_error){
-    if (current_error == 0) {
-        forward();}
-    else if(current_error < 0) {
-        turn_right();}
-    else{
-        turn_left();
-        }
-}
-
-// turns right
-void turn_right(){
-    digitalWrite(left_dir_pin,HIGH); 
-    digitalWrite(right_dir_pin,LOW); 
-}
-// turns left
-void turn_left(){
-    digitalWrite(left_dir_pin,LOW); 
-    digitalWrite(right_dir_pin,HIGH); 
-}
-// goes forward
-void forward(){
-    digitalWrite(left_dir_pin,HIGH); 
-    digitalWrite(right_dir_pin,HIGH); 
-}
 
 // calc initial PD
 int getPD(){
-    double proportional = calcError;
-    double derivative = (calcError-prevError)/dt;
-    prevError = calcError;
-    return (proportional * Kp + derivative * Kd);
+    return calcError * Kp;
 }
