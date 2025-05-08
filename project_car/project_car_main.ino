@@ -26,9 +26,11 @@ int sensorCalc[8] ={0};
 int calcError = 0;
 int prevError = 0;
 uint16_t sensor_measured[8] = {0};
+double dt;
 
-int left_baseSpeed = 25;
-int right_baseSpeed = 25;
+int last_time = 0;
+int now_time = 0;
+int baseSpeed = 25;
 
 // define pins
 const int left_nslp_pin =31;     // nslp ==> awake & ready for PWM
@@ -60,8 +62,8 @@ void setup(){
     Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
 
     // set base speed
-    analogWrite(left_pwm_pin,left_baseSpeed);
-    analogWrite(right_pwm_pin, right_baseSpeed);
+    analogWrite(left_pwm_pin,baseSpeed);
+    analogWrite(right_pwm_pin, baseSpeed);
 }
 
 // LOOP (program run continiously as car is on)
@@ -73,8 +75,16 @@ void loop(){
 
     // compute error
     compute_error(sensor_measured);
+    now_time = millis();
+    dt = now_time - last_time;
+    last_time = now_time();
 
     // compute steering change command
+    adjust_steer(calcError);            // adjust the steering
+    baseSpeed = getPD();
+    analogWrite(left_pwm_pin,baseSpeed);
+    analogWrite(right_pwm_pin, baseSpeed);
+
     // add change to one wheel, subtract from other
 }
 
@@ -125,7 +135,10 @@ void forward(){
     digitalWrite(right_dir_pin,HIGH); 
 }
 
-// calc initial kp
-void getKp(){
-
+// calc initial PD
+void getPD(){
+    double proportional = calcError;
+    double derivative = (calcError-prevError)/dt;
+    prevError = calcError;
+    return (proportional * Kp + derivative * Kd);
 }
