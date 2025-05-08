@@ -24,7 +24,6 @@ const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 // define variables + arrays
 int sensorCalc[8] ={0};
 int calcError = 0;
-int Kp = 0;
 int prevError = 0;
 uint16_t sensor_measured[8] = {0};
 
@@ -82,7 +81,7 @@ void loop(){
 // HELPER FUNCTIONS
 
 // computes the error of array of 8 sensor inputs by fusing each value according to values in calibrationWeight
-void compute_error (int sensorValues[8]){
+void compute_error (uint16_t sensorValues[8]){
     // subtract mins
     for(unsigned char i = 0; i < 8; i++){
         sensorCalc[i] = sensorValues[i] - sensorMins[i];
