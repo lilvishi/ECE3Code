@@ -1,3 +1,4 @@
+
 // project_car_main.
 // 
 // * 
@@ -12,20 +13,22 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const double Kp = 0.05; // determine experimentally
+const float Kp = 0.0085; // determine experimentally
+const float Kd = 0.1;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
 const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
+const int start_speed = 50;
 
 // define variables + arrays
 int sensorCalc[8] ={0};
 uint16_t sensor_measured[8] = {0};
 float calcError = 0;
 float prevError = 0;
-float dt;
+float dt = 0;
 
 float last_time = 0;
 float now_time = 0;
@@ -78,16 +81,16 @@ void loop(){
 
     // compute steering change command
     //adjust_steer(calcError);            // adjust the steering
+    now_time = millis();
+    dt = now_time - last_time;
+    last_time = now_time;
+
     int PDval = getPD();
-    Serial.print(left_baseSpeed);
-    Serial.print("\t");
-    left_baseSpeed += PDval;
-    right_baseSpeed -= PDval;
-    Serial.print(left_baseSpeed);
-    Serial.print("\t");
-    Serial.print(right_baseSpeed);
-    Serial.print("\n");
-    delay(500);
+
+    left_baseSpeed = start_speed - PDval;
+    right_baseSpeed = start_speed + PDval;
+
+    prevError = calcError;
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
 
@@ -117,5 +120,5 @@ void compute_error (uint16_t sensorValues[8]){
 
 // calc initial PD
 int getPD(){
-    return calcError * Kp;
+    return calcError * Kp + ((calcError - prevError)/dt) * Kd;
 }
