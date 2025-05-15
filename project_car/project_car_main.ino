@@ -30,6 +30,9 @@ float calcError = 0;
 float prevError = 0;
 float dt = 0;
 
+// Get the thing to 360, every loop is 6 milliseconds
+// 2.615 seconds for a full rotation
+// 1.31 for half a rotation
 // 14.6 cm in diameter
 int readSum = 0;
 bool isCrosspiece = false;
@@ -168,6 +171,16 @@ void turn_left(){
 void forward(){
     digitalWrite(left_dir_pin,LOW); 
     digitalWrite(right_dir_pin,LOW); 
+}
+
+// rotate 180
+void rotate180(){
+    analogWrite(left_pwm_pin, 50);
+    analogWrite(right_pwm_pin, 50);
+    digitalWrite(left_dir_pin,LOW);    
+    digitalWrite(left_nslp_pin,HIGH);   
+    digitalWrite(right_dir_pin,HIGH);
+    digitalWrite(right_nslp_pin,HIGH);
 }
 
 // calc initial PD
