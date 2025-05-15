@@ -22,13 +22,13 @@ const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 
 // define variables + arrays
 int sensorCalc[8] ={0};
-int calcError = 0;
-int prevError = 0;
 uint16_t sensor_measured[8] = {0};
-double dt;
+float calcError = 0;
+float prevError = 0;
+float dt;
 
-int last_time = 0;
-int now_time = 0;
+float last_time = 0;
+float now_time = 0;
 int right_baseSpeed = 50;
 int left_baseSpeed = 50;
 
