@@ -35,7 +35,8 @@ float dt = 0;
 // 1.31 for half a rotation
 // 14.6 cm in diameter
 int readSum = 0;
-bool isCrosspiece = false;
+bool hasTurned = false; // true if travelling down, false if travelling up
+float turnTime = 0;
 
 float last_time = 0;
 float now_time = 0;
@@ -78,32 +79,46 @@ void setup(){
 
 // LOOP (program run continiously as car is on)
 void loop(){
-    // read sensor Values
-    ECE3_read_IR(sensor_measured);
-
-    // compute error
-    compute_error(sensor_measured); // changes calcError and isCrosspiece
-    // check for crosspiece
-    if(isCrosspiece){
-        turn_right();
-        isCrosspiece = false;
-    }
-    // compute steering change command
     now_time = millis();
-    dt = now_time - last_time;
-    last_time = now_time;
+    // check time 
+    //if(now_time < turnTime){
+        //rotate180();
+    //}
+    //else{
+        forward();
+        // read sensor Values
+        ECE3_read_IR(sensor_measured);
 
-    int PDval = getPD();
+        // compute error
+        compute_error(sensor_measured); // changes calcError and sensorCalc
 
-    // add change to one wheel, subtract from other
+        // check for crosspiece
+        readSum = 0;
+        for(int i = 0; i < 8 ; i++){
+            readSum += sensorCalc[i];
+        }
+        readSum /= 8;
+        if (readSum > 900){
+            turnTime = now_time + 1310;
+            hasTurned = !hasTurned;
+        }
+        
+        // compute steering change command
+        dt = now_time - last_time;
+        last_time = now_time;
 
-    left_baseSpeed = start_speed - PDval;
-    right_baseSpeed = start_speed + PDval;
-    adjust_steer();            // adjust the steering
+        int PDval = getPD();
 
-    prevError = calcError;
-    analogWrite(left_pwm_pin,left_baseSpeed);
-    analogWrite(right_pwm_pin, right_baseSpeed);
+        // add change to one wheel, subtract from other
+
+        left_baseSpeed = start_speed - PDval;
+        right_baseSpeed = start_speed + PDval;
+        adjust_steer();            // adjust the steering
+
+        prevError = calcError;
+        analogWrite(left_pwm_pin,left_baseSpeed);
+        analogWrite(right_pwm_pin, right_baseSpeed);
+    //}
 }
 
 // HELPER FUNCTIONS
@@ -123,16 +138,6 @@ void compute_error (uint16_t sensorValues[8]){
         calcError += sensorCalc[k] * calibrationWeight[k];
     }
     calcError /= 4;
-
-    readSum = 0;
-    isCrosspiece = false;
-    for(int i = 0; i < 8 ; i++){
-        readSum += sensor_measured[i];
-    }
-
-    readSum /= 8;
-    if (readSum > 900)
-        isCrosspiece = true;
     return;
 }
 // computes steering change according to error determined by weights on track
