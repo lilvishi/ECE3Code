@@ -30,9 +30,6 @@ float calcError = 0;
 float prevError = 0;
 float dt = 0;
 
-// Get the thing to 360, every loop is 6 milliseconds
-// 2.615 seconds for a full rotation
-// 1.31 for half a rotation
 // 14.6 cm in diameter
 int readSum = 0;
 bool hasTurned = false; // true if travelling down, false if travelling up
@@ -80,18 +77,15 @@ void setup(){
 // LOOP (program run continiously as car is on)
 void loop(){
     now_time = millis();
-    // check time 
-    //if(now_time < turnTime){
-        //rotate180();
-    //}
-    //else{
-        forward();
+    if(now_time < turnTime){
+        rotate180();
+    }
+    else{
         // read sensor Values
         ECE3_read_IR(sensor_measured);
 
         // compute error
-        compute_error(sensor_measured); // changes calcError and sensorCalc
-
+        compute_error(sensor_measured); // changes calcError and isCrosspiece
         // check for crosspiece
         readSum = 0;
         for(int i = 0; i < 8 ; i++){
@@ -102,7 +96,6 @@ void loop(){
             turnTime = now_time + 1310;
             hasTurned = !hasTurned;
         }
-        
         // compute steering change command
         dt = now_time - last_time;
         last_time = now_time;
@@ -118,7 +111,7 @@ void loop(){
         prevError = calcError;
         analogWrite(left_pwm_pin,left_baseSpeed);
         analogWrite(right_pwm_pin, right_baseSpeed);
-    //}
+        }
 }
 
 // HELPER FUNCTIONS
@@ -149,7 +142,7 @@ void adjust_steer(){
         turn_right();
         }
     else{
-        forward();;
+        forward();
         }
     return;
 }
