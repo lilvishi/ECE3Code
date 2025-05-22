@@ -20,7 +20,9 @@ const int errorMax = 2777;
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
+const int calibrationWeight_yesTurn[8] = {-16,-12,-8,-4,1,2,4,8};
+const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,4,8,12,16};
+//const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 const int start_speed = 25;
 
 // define variables + arrays
@@ -34,6 +36,8 @@ float dt = 0;
 int readSum = 0;
 bool hasTurned = false; // true if travelling down, false if travelling up
 float turnTime = 0;
+
+// for split
 
 float last_time = 0;
 float now_time = 0;
@@ -86,6 +90,7 @@ void loop(){
 
         // compute error
         compute_error(sensor_measured); // changes calcError and isCrosspiece
+
         // check for crosspiece
         readSum = 0;
         for(int i = 0; i < 8 ; i++){
@@ -96,6 +101,7 @@ void loop(){
             turnTime = now_time + 1310;
             hasTurned = !hasTurned;
         }
+
         // compute steering change command
         dt = now_time - last_time;
         last_time = now_time;
@@ -128,7 +134,10 @@ void compute_error (uint16_t sensorValues[8]){
     }
     // calculate error
     for(unsigned char k = 0; k < 8; k++){
-        calcError += sensorCalc[k] * calibrationWeight[k];
+        if(hasTurned)
+            calcError += sensorCalc[k] * calibrationWeight_yesTurn[k];
+        else
+            calcError += sensorCalc[k] * calibrationWeight_noTurn[k];
     }
     calcError /= 4;
     return;
