@@ -22,11 +22,15 @@ const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
 const int calibrationWeight_yesTurn[8] = {-8,-7,-4,-3,3,2,3,5}; //way back
 const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,2,8,12,16}; //first time
-//const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
+const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 const int start_speed = 50;
 
 // define variables + arrays
 int sensorCalc[8] ={0};
+
+int num_peak = 0;
+int thisCalWeight[8] = {0};
+
 uint16_t sensor_measured[8] = {0};
 float calcError = 0;
 float prevError = 0;
@@ -142,22 +146,34 @@ void compute_error (uint16_t sensorValues[8]){
     for(unsigned char j = 0; j < 8; j++){
         sensorCalc[j] = sensorCalc[j]*1000/sensorMax[j];
     }
+
+    // check if there is a split 
+    num_peak = 0;
+    thisCalWeight = calibrationWeight;
+    for(unsigned char k = 0; k < 8; k++){
+        if(sensorCalc[k] > 900)
+            num_peak +=1;
+    }
+    if(num_peak > 1){
+         if(hasTurned)
+            thisCalWeight = calibrationWeight_yesTurn
+        else
+            thisCalWeight = calibrationWeight_noTurn
+    }
+
     // calculate error
     for(unsigned char k = 0; k < 8; k++){
-        if(hasTurned)
-            calcError += sensorCalc[k] * calibrationWeight_yesTurn[k];
-        else
-            calcError += sensorCalc[k] * calibrationWeight_noTurn[k];
+        calcError += sensorCalc[k] * thisCalWeight[k];
     }
     calcError /= 4;
     return;
 }
 // computes steering change according to error determined by weights on track
 void adjust_steer(){
-    if (calcError > 200) { // left wheel slower
+    if (calcError > 300) { // left wheel slower
         turn_left();
         }
-    else if(calcError < -200) { // right wheel slower
+    else if(calcError < -300) { // right wheel slower
         turn_right();
         }
     else{
