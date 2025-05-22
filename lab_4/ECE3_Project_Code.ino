@@ -7,6 +7,7 @@ const int left_pwm_pin=40;
 const int right_nslp_pin=11; // nslp ==> awake & ready for PWM
 const int right_dir_pin=30;
 const int right_pwm_pin=39;
+const int LED_RF = 41;
 
 
 const int LED_RF = 41;
@@ -34,6 +35,7 @@ void setup()
   digitalWrite(right_nslp_pin,HIGH);
 
   pinMode(LED_RF, OUTPUT);
+  
   ECE3_Init();
   Serial.begin(9600); // set the data rate in bits per second for serial data transmission
   delay(2000);

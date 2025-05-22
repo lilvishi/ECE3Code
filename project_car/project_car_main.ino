@@ -13,17 +13,17 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.03; // determine experimentally
-const float Kd = 0.005;
+const float Kp = 0.04; // determine experimentally
+const float Kd = 0.006;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeight_yesTurn[8] = {-16,-12,-8,-4,1,2,4,8};
+const int calibrationWeight_yesTurn[8] = {-14,-10,-6,-2,1,2,4,8};
 const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,4,8,12,16};
 //const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
-const int start_speed = 25;
+const int start_speed = 50;
 
 // define variables + arrays
 int sensorCalc[8] ={0};
@@ -52,6 +52,8 @@ const int right_dir_pin=30;
 const int left_pwm_pin=40;
 const int right_pwm_pin=39;
 
+const int LED_RF = 41;
+
 // SETUP (program run once for initialization)
 void setup(){
     // set pin modes 
@@ -69,6 +71,8 @@ void setup(){
     digitalWrite(right_dir_pin,LOW);
     digitalWrite(right_nslp_pin,HIGH);
 
+    pinMode(LED_RF, OUTPUT);
+
     // initialize serial communication
     ECE3_Init();
     Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
@@ -83,9 +87,11 @@ void loop(){
     now_time = millis();
     if(now_time < turnTime){
         rotate180();
+        digitalWrite(LED_RF, HIGH);
     }
     else{
         // read sensor Values
+        digitalWrite(LED_RF, LOW);
         ECE3_read_IR(sensor_measured);
 
         // compute error
@@ -160,19 +166,25 @@ void adjust_steer(){
 void turn_right(){
     digitalWrite(left_dir_pin,LOW); 
     digitalWrite(right_dir_pin,HIGH); 
+    right_baseSpeed -= 10;
+    left_baseSpeed -= 10;
     if(right_baseSpeed < 0){
         right_baseSpeed *= -1;
-        //right_baseSpeed /= 2;
+        left_baseSpeed += 10;
     }
+    right_baseSpeed /= 2;
 }
 // turns left
 void turn_left(){
     digitalWrite(left_dir_pin,HIGH); 
     digitalWrite(right_dir_pin,LOW); 
+    right_baseSpeed -= 10;
+    left_baseSpeed -= 10;
     if(left_baseSpeed < 0){
         left_baseSpeed *= -1;
-        //left_baseSpeed /= 2;
+        left_baseSpeed += 10;
     }
+    left_baseSpeed /= 2;
 }
 // goes forward
 void forward(){
