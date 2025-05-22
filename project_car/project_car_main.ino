@@ -14,14 +14,14 @@
 // DEFINE INITIAL VALUES
 // define constants
 const float Kp = 0.04; // determine experimentally
-const float Kd = 0.006;
+const float Kd = 0.009;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeight_yesTurn[8] = {-14,-10,-6,-2,1,2,4,8};
-const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,4,8,12,16};
+const int calibrationWeight_yesTurn[8] = {-8,-7,-4,-3,3,2,3,5}; //way back
+const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,2,8,12,16}; //first time
 //const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
 const int start_speed = 50;
 
@@ -80,6 +80,7 @@ void setup(){
     // set base speed
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
+
 }
 
 // LOOP (program run continiously as car is on)
@@ -88,6 +89,9 @@ void loop(){
     if(now_time < turnTime){
         rotate180();
         digitalWrite(LED_RF, HIGH);
+    }
+    else if (now_time == turnTime){
+        forward();
     }
     else{
         // read sensor Values
