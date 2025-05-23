@@ -14,22 +14,24 @@
 // DEFINE INITIAL VALUES
 // define constants
 const float Kp = 0.04; // determine experimentally
-const float Kd = 0.009;
+const float Kd = 0.0008;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeight_yesTurn[8] = {-8,-7,-4,-3,3,2,3,5}; //way back
-const int calibrationWeight_noTurn[8] = {-8,-4,-2,-1,2,8,12,16}; //first time
-const int calibrationWeight[8] = {-8,-4,-2,-1,1,2,4,8};
+const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-1,-1,-1,-3,-4,-8,-16},{-16,-8,-4,-3,1,1,2,6}}; // no change, go forward, go backward
 const int start_speed = 50;
+
+const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
 // define variables + arrays
 int sensorCalc[8] ={0};
+int calibrationWeightUsed[8];
+int centerSum = 0;
 
 int num_peak = 0;
-int thisCalWeight[8] = {0};
+int thisCalWeight = 0;
 
 uint16_t sensor_measured[8] = {0};
 float calcError = 0;
@@ -56,7 +58,8 @@ const int right_dir_pin=30;
 const int left_pwm_pin=40;
 const int right_pwm_pin=39;
 
-const int LED_RF = 41;
+const int LED_RF = 41; // blinks when 180
+const int LED_LF = 51; // blinks when split detected
 
 // SETUP (program run once for initialization)
 void setup(){
@@ -76,6 +79,7 @@ void setup(){
     digitalWrite(right_nslp_pin,HIGH);
 
     pinMode(LED_RF, OUTPUT);
+    pinMode(LED_LF, OUTPUT);
 
     // initialize serial communication
     ECE3_Init();
@@ -149,31 +153,47 @@ void compute_error (uint16_t sensorValues[8]){
 
     // check if there is a split 
     num_peak = 0;
-    thisCalWeight = calibrationWeight;
+    thisCalWeight = 0;
     for(unsigned char k = 0; k < 8; k++){
         if(sensorCalc[k] > 900)
             num_peak +=1;
     }
-    if(num_peak > 1){
-         if(hasTurned)
-            thisCalWeight = calibrationWeight_yesTurn
-        else
-            thisCalWeight = calibrationWeight_noTurn
+
+    // check if the center is reading
+    centerSum = 0;
+    centerSum += sensorCalc[3];
+    centerSum += sensorCalc[4];
+
+    // if centered ignore other values
+    for(unsigned char k = 0; k < 8; k++){
+        if((centerSum >= 1500) && (num_peak != 2))
+            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k] * mult_zero[k]; 
+        else{ // check for peaks if not centered
+            if(num_peak == 2){
+                digitalWrite(LED_LF, HIGH);
+                if(hasTurned)
+                    thisCalWeight = 2;
+                else
+                    thisCalWeight = 1;}
+            else
+                digitalWrite(LED_LF, LOW);
+            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
+        }
     }
 
     // calculate error
     for(unsigned char k = 0; k < 8; k++){
-        calcError += sensorCalc[k] * thisCalWeight[k];
+        calcError += sensorCalc[k] * calibrationWeightUsed[k];
     }
     calcError /= 4;
     return;
 }
 // computes steering change according to error determined by weights on track
 void adjust_steer(){
-    if (calcError > 300) { // left wheel slower
+    if (calcError > 200) { // left wheel slower
         turn_left();
         }
-    else if(calcError < -300) { // right wheel slower
+    else if(calcError < -200) { // right wheel slower
         turn_right();
         }
     else{
@@ -190,9 +210,9 @@ void turn_right(){
     left_baseSpeed -= 10;
     if(right_baseSpeed < 0){
         right_baseSpeed *= -1;
-        left_baseSpeed += 10;
+        //left_baseSpeed += 10;
     }
-    right_baseSpeed /= 2;
+    //right_baseSpeed /= 2;
 }
 // turns left
 void turn_left(){
@@ -202,9 +222,9 @@ void turn_left(){
     left_baseSpeed -= 10;
     if(left_baseSpeed < 0){
         left_baseSpeed *= -1;
-        left_baseSpeed += 10;
+        //left_baseSpeed += 10;
     }
-    left_baseSpeed /= 2;
+    //left_baseSpeed /= 2;
 }
 // goes forward
 void forward(){
