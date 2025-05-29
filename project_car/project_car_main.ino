@@ -13,15 +13,15 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.04; // determine experimentally
-const float Kd = 0.0008;
+const float Kp = 0.03; // determine experimentally
+const float Kd = 0.095;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-2,-1,-1,2,3,6,12},{-12,-6,-3,-2,1,1,2,6}}; // no change, go forward, go backward
-const int start_speed = 50;
+const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-2,-1,2,2,4,8,16},{-16,-8,-4,-2,2,1,2,6}}; // no change, go forward, go backward
+const int start_speed = 35;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
@@ -270,5 +270,5 @@ void rotate180(){
 
 // calc initial PD
 int getPD(){
-    return calcError * Kp + ((calcError - prevError)/dt) * Kd;
+    return calcError * Kp + (calcError - prevError) * Kd;
 }
