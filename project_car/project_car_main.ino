@@ -13,15 +13,15 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.04; // determine experimentally
-const float Kd = 0.0008;
+const float Kp = 0.03; // determine experimentally
+const float Kd = 0.003;
 const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
 const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-2,-1,-1,2,3,6,12},{-12,-6,-3,-2,1,1,2,6}}; // no change, go forward, go backward
-const int start_speed = 50;
+const int start_speed = 25;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
@@ -88,6 +88,7 @@ void setup(){
     // set base speed
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
+    delay(2000);
 
 }
 
@@ -168,14 +169,14 @@ void compute_error (uint16_t sensorValues[8]){
     // if centered ignore other values
     for(unsigned char k = 0; k < 8; k++){
         // if there are two peaks at once choose is arch or split
-        if((num_peak == 2)){
+        if(num_peak == 2){
             digitalWrite(LED_LF, HIGH);
 
             // add bias
             if(hasTurned)
                 thisCalWeight = 2;
             else
-                thisCalWeight = 1;}
+                thisCalWeight = 1;
 
             // if arch ignore side, otherwise keep bias
             //if(is arch)
@@ -218,7 +219,7 @@ void turn_right(){
     left_baseSpeed -= 10;
     if(right_baseSpeed < 0){
         right_baseSpeed *= -1;
-        //left_baseSpeed += 10;
+        //right_baseSpeed += 10;
     }
     //right_baseSpeed /= 2;
 }
