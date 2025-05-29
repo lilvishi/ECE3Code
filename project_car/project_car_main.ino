@@ -20,7 +20,7 @@ const int errorMax = 2777;
 // min and max from calibration
 const int sensorMins[8] = {436,527,505,482,550,459,574,527};
 const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-1,-1,-1,-3,-4,-8,-16},{-16,-8,-4,-3,1,1,2,6}}; // no change, go forward, go backward
+const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-2,-1,-1,2,3,6,12},{-12,-6,-3,-2,1,1,2,6}}; // no change, go forward, go backward
 const int start_speed = 50;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
@@ -154,6 +154,7 @@ void compute_error (uint16_t sensorValues[8]){
     // check if there is a split 
     num_peak = 0;
     thisCalWeight = 0;
+
     for(unsigned char k = 0; k < 8; k++){
         if(sensorCalc[k] > 900)
             num_peak +=1;
@@ -166,17 +167,24 @@ void compute_error (uint16_t sensorValues[8]){
 
     // if centered ignore other values
     for(unsigned char k = 0; k < 8; k++){
-        if((centerSum >= 1500) && (num_peak != 2))
-            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k] * mult_zero[k]; 
-        else{ // check for peaks if not centered
-            if(num_peak == 2){
-                digitalWrite(LED_LF, HIGH);
-                if(hasTurned)
-                    thisCalWeight = 2;
-                else
-                    thisCalWeight = 1;}
+        // if there are two peaks at once choose is arch or split
+        if((num_peak == 2)){
+            digitalWrite(LED_LF, HIGH);
+
+            // add bias
+            if(hasTurned)
+                thisCalWeight = 2;
             else
-                digitalWrite(LED_LF, LOW);
+                thisCalWeight = 1;}
+
+            // if arch ignore side, otherwise keep bias
+            //if(is arch)
+                //calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k] * mult_zero[k]; 
+            //else 
+            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
+        }
+        else{ // check for peaks if not centered
+            digitalWrite(LED_LF, LOW);
             calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
         }
     }
