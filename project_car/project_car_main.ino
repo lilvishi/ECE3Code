@@ -13,7 +13,7 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.035; // determine experimentally
+const float Kp = 0.05; // determine experimentally
 const float Kd = 0.09;
 const int errorMax = 2777;
 
@@ -21,7 +21,7 @@ const int errorMax = 2777;
 const int sensorMins[8] = {596,596,596,619,666,573,642,619};
 const int sensorMax[8] = {1849,1894,1846,1620,1834,1582,1858,1881};
 const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-28,-24,-15,-8,8,4,6,8}}; // go forward, go backward
-const int start_speed = 35;
+const int start_speed = 50;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
