@@ -13,14 +13,14 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.03; // determine experimentally
-const float Kd = 0.095;
+const float Kp = 0.035; // determine experimentally
+const float Kd = 0.09;
 const int errorMax = 2777;
 
 // min and max from calibration
-const int sensorMins[8] = {436,527,505,482,550,459,574,527};
-const int sensorMax[8] = {1895,1729,1490,877,1635,1606,1926,1973};
-const int calibrationWeights [3][8] = {{-8,-4,-2,-1,1,2,4,8},{-6,-2,-1,-1,2,4,8,16},{-16,-8,-4,-2,1,1,2,6}}; // no change, go forward, go backward
+const int sensorMins[8] = {596,596,596,619,666,573,642,619};
+const int sensorMax[8] = {1849,1894,1846,1620,1834,1582,1858,1881};
+const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-28,-24,-15,-8,8,4,6,8}}; // go forward, go backward
 const int start_speed = 35;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
@@ -34,14 +34,13 @@ int num_peak = 0;
 int thisCalWeight = 0;
 
 uint16_t sensor_measured[8] = {0};
-float calcError = 0;
-float prevError = 0;
-float dt = 0;
+int calcError = 0;
+int prevError = 0;
 
 // 14.6 cm in diameter
 int readSum = 0;
 int hasTurned = 0; // true if travelling down, false if travelling up
-float turnTime = 0;
+int turnTime = 0;
 
 // for split
 
@@ -85,7 +84,7 @@ void setup(){
     ECE3_Init();
     Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
 
-     // set base speed
+     
     //delay(2000);
 
 }
@@ -95,17 +94,19 @@ void loop(){
     //analogWrite(left_pwm_pin,left_baseSpeed);
     //analogWrite(right_pwm_pin, right_baseSpeed);
 
-    now_time = millis();
     // read sensor Values
     digitalWrite(LED_RF, LOW);
+    digitalWrite(LED_LF, LOW);
     ECE3_read_IR(sensor_measured);
-    if(hasTurned == 2){
+
+    if(hasTurned == 3){
+        digitalWrite(LED_LF, HIGH);
         analogWrite(left_pwm_pin,0);
         analogWrite(right_pwm_pin, 0);
         digitalWrite(left_nslp_pin,LOW);
         digitalWrite(left_nslp_pin,LOW);
+        return;
     }
-    else{
         // compute error
     compute_error(sensor_measured); // changes calcError and isCrosspiece
 
@@ -115,14 +116,25 @@ void loop(){
         readSum += sensorCalc[i];
     }
     readSum /= 8;
-    if (readSum > 900){
+    if (readSum > 900){ //CHANGED THRESHOLD VS
         hasTurned += 1;
-        rotate180();
+        switch(hasTurned) {
+            case 1:
+                digitalWrite(LED_LF, HIGH); 
+                rotate180();
+                break;
+            case 2:
+                digitalWrite(LED_LF, HIGH);
+                break;
+            case 3:
+                digitalWrite(LED_LF, HIGH);
+                analogWrite(left_pwm_pin,0);
+                analogWrite(right_pwm_pin, 0);
+                digitalWrite(left_nslp_pin,LOW);
+                digitalWrite(left_nslp_pin,LOW);
+        }
     }
 
-    // compute steering change command
-    dt = now_time - last_time;
-    last_time = now_time;
 
     int PDval = getPD();
 
@@ -135,7 +147,6 @@ void loop(){
     prevError = calcError;
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
-    }
 
 }
 
@@ -143,6 +154,7 @@ void loop(){
 
 // computes the error of array of 8 sensor inputs by fusing each value according to values in calibrationWeight
 void compute_error (uint16_t sensorValues[8]){
+    calcError = 0; //VS
     // subtract mins
     for(unsigned char i = 0; i < 8; i++){
         sensorCalc[i] = sensorValues[i] - sensorMins[i];
@@ -152,49 +164,14 @@ void compute_error (uint16_t sensorValues[8]){
         sensorCalc[j] = sensorCalc[j]*1000/sensorMax[j];
     }
 
-    // check if there is a split 
-    num_peak = 0;
-    thisCalWeight = 0;
-
-    for(unsigned char k = 0; k < 8; k++){
-        if(sensorCalc[k] > 900)
-            num_peak +=1;
-    }
     // add bias
     if(hasTurned)
-        thisCalWeight = 2;
+        thisCalWeight = 1; //RIGHT BIAS
     else
-        thisCalWeight = 1;
-
-    // check if the center is reading
-    centerSum = 0;
-    centerSum += sensorCalc[3];
-    centerSum += sensorCalc[4];
+        thisCalWeight = 0; //LEFT BIAS
 
     // if centered ignore other values
     for(unsigned char k = 0; k < 8; k++){
-        // if there are two peaks at once choose is arch or split
-        /*
-        if((num_peak == 2)){
-            digitalWrite(LED_LF, HIGH);
-
-            // add bias
-            if(hasTurned)
-                thisCalWeight = 2;
-            else
-                thisCalWeight = 1;
-
-            // if arch ignore side, otherwise keep bias
-            //if(is arch)
-                //calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k] * mult_zero[k]; 
-            //else 
-            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
-        }
-        else{ // check for peaks if not centered
-            digitalWrite(LED_LF, LOW);
-            calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
-        }
-        */
         calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
     }
 
@@ -202,51 +179,37 @@ void compute_error (uint16_t sensorValues[8]){
     for(unsigned char k = 0; k < 8; k++){
         calcError += sensorCalc[k] * calibrationWeightUsed[k];
     }
-    calcError /= 4;
+    calcError /= 8;
     return;
 }
 // computes steering change according to error determined by weights on track
 void adjust_steer(){
-    if (calcError > 200) { // left wheel slower
-        turn_left();
+    if (calcError > 450) { // left wheel slower
+        //TURN LEFT
+        digitalWrite(left_dir_pin,HIGH); 
+        digitalWrite(right_dir_pin,LOW); 
+        left_baseSpeed -= 10;
+        right_baseSpeed -= 10;
+        if(left_baseSpeed < 0){
+            left_baseSpeed *= -1;
         }
-    else if(calcError < -200) { // right wheel slower
-        turn_right();
+    } else if(calcError < -400) { // right wheel slower
+        //TURN RIGHT
+        digitalWrite(left_dir_pin,LOW); 
+        digitalWrite(right_dir_pin,HIGH); 
+        right_baseSpeed -= 10;
+        left_baseSpeed -= 10;
+        if(right_baseSpeed < 0){
+            right_baseSpeed *= -1;
         }
-    else{
-        forward();
-        }
+    } else {
+        //GO FORWARD 
+        right_baseSpeed = start_speed; //VS
+        left_baseSpeed = start_speed;
+        digitalWrite(left_dir_pin,LOW); 
+        digitalWrite(right_dir_pin,LOW); 
+    }
     return;
-}
-
-// turns right
-void turn_right(){
-    digitalWrite(left_dir_pin,LOW); 
-    digitalWrite(right_dir_pin,HIGH); 
-    right_baseSpeed -= 10;
-    left_baseSpeed -= 10;
-    if(right_baseSpeed < 0){
-        right_baseSpeed *= -1;
-        //left_baseSpeed += 10;
-    }
-    //right_baseSpeed /= 2;
-}
-// turns left
-void turn_left(){
-    digitalWrite(left_dir_pin,HIGH); 
-    digitalWrite(right_dir_pin,LOW); 
-    right_baseSpeed -= 10;
-    left_baseSpeed -= 10;
-    if(left_baseSpeed < 0){
-        left_baseSpeed *= -1;
-        //left_baseSpeed += 10;
-    }
-    //left_baseSpeed /= 2;
-}
-// goes forward
-void forward(){
-    digitalWrite(left_dir_pin,LOW); 
-    digitalWrite(right_dir_pin,LOW); 
 }
 
 // rotate 180
@@ -258,7 +221,7 @@ void rotate180(){
     digitalWrite(right_dir_pin,HIGH);
     digitalWrite(right_nslp_pin,HIGH);
 
-    delay(1310);
+    delay(1290); //VS og value 1310
     analogWrite(left_pwm_pin, 50);
     analogWrite(right_pwm_pin, 50);
     digitalWrite(left_dir_pin,LOW);    
