@@ -13,24 +13,20 @@
 
 // DEFINE INITIAL VALUES
 // define constants
-const float Kp = 0.05; // determine experimentally
+const float Kp = 0.035; // determine experimentally
 const float Kd = 0.09;
-const int errorMax = 2777;
 
 // min and max from calibration
 const int sensorMins[8] = {596,596,596,619,666,573,642,619};
 const int sensorMax[8] = {1849,1894,1846,1620,1834,1582,1858,1881};
 const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-28,-24,-15,-8,8,4,6,8}}; // go forward, go backward
-const int start_speed = 50;
+const int start_speed = 35;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
 // define variables + arrays
 int sensorCalc[8] ={0};
 int calibrationWeightUsed[8];
-int centerSum = 0;
-
-int num_peak = 0;
 int thisCalWeight = 0;
 
 uint16_t sensor_measured[8] = {0};
@@ -40,12 +36,8 @@ int prevError = 0;
 // 14.6 cm in diameter
 int readSum = 0;
 int hasTurned = 0; // true if travelling down, false if travelling up
-int turnTime = 0;
 
 // for split
-
-float last_time = 0;
-float now_time = 0;
 int right_baseSpeed = 25;
 int left_baseSpeed = 25;
 
@@ -84,30 +76,17 @@ void setup(){
     ECE3_Init();
     Serial.begin(9600);  // set the data rate in bits per second for serial data transmission
 
-     
-    //delay(2000);
-
 }
 
 // LOOP (program run continiously as car is on)
 void loop(){
-    //analogWrite(left_pwm_pin,left_baseSpeed);
-    //analogWrite(right_pwm_pin, right_baseSpeed);
 
     // read sensor Values
     digitalWrite(LED_RF, LOW);
     digitalWrite(LED_LF, LOW);
     ECE3_read_IR(sensor_measured);
 
-    if(hasTurned == 3){
-        digitalWrite(LED_LF, HIGH);
-        analogWrite(left_pwm_pin,0);
-        analogWrite(right_pwm_pin, 0);
-        digitalWrite(left_nslp_pin,LOW);
-        digitalWrite(left_nslp_pin,LOW);
-        return;
-    }
-        // compute error
+    // compute error
     compute_error(sensor_measured); // changes calcError and isCrosspiece
 
     // check for crosspiece
@@ -116,7 +95,7 @@ void loop(){
         readSum += sensorCalc[i];
     }
     readSum /= 8;
-    if (readSum > 900){ //CHANGED THRESHOLD VS
+    if (readSum > 900){
         hasTurned += 1;
         switch(hasTurned) {
             case 1:
@@ -131,7 +110,8 @@ void loop(){
                 analogWrite(left_pwm_pin,0);
                 analogWrite(right_pwm_pin, 0);
                 digitalWrite(left_nslp_pin,LOW);
-                digitalWrite(left_nslp_pin,LOW);
+                digitalWrite(right_nslp_pin,LOW);
+                return;
         }
     }
 
