@@ -19,7 +19,7 @@ const float Kd = 0.09;
 // min and max from calibration
 const int sensorMins[8] = {596,596,596,619,666,573,642,619};
 const int sensorMax[8] = {1849,1894,1846,1620,1834,1582,1858,1881};
-const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-28,-24,-15,-8,8,4,6,8}}; // go forward, go backward
+const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-24,-20,-15,-8,8,4,10,18}}; // go forward, go backward
 const int start_speed = 35;
 
 const int mult_zero[8] = {0,0,1,1,1,1,0,0};
@@ -80,8 +80,8 @@ void setup(){
 
 // LOOP (program run continiously as car is on)
 void loop(){
-
-    // read sensor Values
+    if (millis() >= 2000){
+        // read sensor Values
     digitalWrite(LED_RF, LOW);
     digitalWrite(LED_LF, LOW);
     ECE3_read_IR(sensor_measured);
@@ -127,6 +127,7 @@ void loop(){
     prevError = calcError;
     analogWrite(left_pwm_pin,left_baseSpeed);
     analogWrite(right_pwm_pin, right_baseSpeed);
+    }
 
 }
 
@@ -150,14 +151,10 @@ void compute_error (uint16_t sensorValues[8]){
     else
         thisCalWeight = 0; //LEFT BIAS
 
-    // if centered ignore other values
-    for(unsigned char k = 0; k < 8; k++){
-        calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
-    }
 
     // calculate error
     for(unsigned char k = 0; k < 8; k++){
-        calcError += sensorCalc[k] * calibrationWeightUsed[k];
+        calcError += sensorCalc[k] * calibrationWeights[thisCalWeight][k];
     }
     calcError /= 8;
     return;
@@ -190,6 +187,7 @@ void adjust_steer(){
         digitalWrite(right_dir_pin,LOW); 
     }
     return;
+    
 }
 
 // rotate 180
