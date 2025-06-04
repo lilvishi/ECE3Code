@@ -15,6 +15,8 @@
 // define constants
 const float Kp = 0.035; // determine experimentally
 const float Kd = 0.09;
+const int LEFT_THRESHOLD = 450;
+const int RIGHT_THRESHOLD = -400;
 
 // min and max from calibration
 const int sensorMins[8] = {596,596,596,619,666,573,642,619};
@@ -22,12 +24,12 @@ const int sensorMax[8] = {1849,1894,1846,1620,1834,1582,1858,1881};
 const int calibrationWeights [2][8] = {{-8,-6,-4,-8,8,15,24,28},{-28,-24,-15,-8,8,4,6,8}}; // go forward, go backward
 const int start_speed = 35;
 
-const int mult_zero[8] = {0,0,1,1,1,1,0,0};
 
 // define variables + arrays
 int sensorCalc[8] ={0};
 int calibrationWeightUsed[8];
 int thisCalWeight = 0;
+int PDval = 0;
 
 uint16_t sensor_measured[8] = {0};
 int calcError = 0;
@@ -80,14 +82,33 @@ void setup(){
 
 // LOOP (program run continiously as car is on)
 void loop(){
-
     // read sensor Values
     digitalWrite(LED_RF, LOW);
     digitalWrite(LED_LF, LOW);
     ECE3_read_IR(sensor_measured);
 
     // compute error
-    compute_error(sensor_measured); // changes calcError and isCrosspiece
+    calcError = 0; //VS
+    // subtract mins
+    for(unsigned char i = 0; i < 8; i++){
+        sensorCalc[i] = sensor_measured[i] - sensorMins[i];
+    }
+    // normalize to 1000
+    for(unsigned char j = 0; j < 8; j++){
+        sensorCalc[j] = sensorCalc[j]*1000/sensorMax[j];
+    }
+
+    // add bias
+    if(hasTurned == 1)
+        thisCalWeight = 1; //RIGHT BIAS
+    else
+        thisCalWeight = 0; //LEFT BIAS
+
+    // calculate error
+    for(unsigned char k = 0; k < 8; k++){
+        calcError += sensorCalc[k] * calibrationWeights[thisCalWeight][k];
+    }
+    calcError /= 8;
 
     // check for crosspiece
     readSum = 0;
@@ -99,14 +120,23 @@ void loop(){
         hasTurned += 1;
         switch(hasTurned) {
             case 1:
+                // turn 180
                 digitalWrite(LED_LF, HIGH); 
-                rotate180();
+                analogWrite(left_pwm_pin, 50);
+                analogWrite(right_pwm_pin, 50);
+                digitalWrite(left_dir_pin,LOW);     
+                digitalWrite(right_dir_pin,HIGH);
+                delay(1290);
+
+                // set back to forwards
+                digitalWrite(right_dir_pin,LOW);
                 break;
             case 2:
                 digitalWrite(LED_LF, HIGH);
                 break;
             case 3:
                 digitalWrite(LED_LF, HIGH);
+                digitalWrite(LED_RF, HIGH);
                 analogWrite(left_pwm_pin,0);
                 analogWrite(right_pwm_pin, 0);
                 digitalWrite(left_nslp_pin,LOW);
@@ -115,103 +145,36 @@ void loop(){
         }
     }
 
-
-    int PDval = getPD();
+    // calculate PDval
+    PDval = calcError * Kp + (calcError - prevError) * Kd;
 
     // add change to one wheel, subtract from other
-
     left_baseSpeed = start_speed - PDval;
     right_baseSpeed = start_speed + PDval;
-    adjust_steer();            // adjust the steering
-
-    prevError = calcError;
-    analogWrite(left_pwm_pin,left_baseSpeed);
-    analogWrite(right_pwm_pin, right_baseSpeed);
-
-}
-
-// HELPER FUNCTIONS
-
-// computes the error of array of 8 sensor inputs by fusing each value according to values in calibrationWeight
-void compute_error (uint16_t sensorValues[8]){
-    calcError = 0; //VS
-    // subtract mins
-    for(unsigned char i = 0; i < 8; i++){
-        sensorCalc[i] = sensorValues[i] - sensorMins[i];
-    }
-    // normalize to 1000
-    for(unsigned char j = 0; j < 8; j++){
-        sensorCalc[j] = sensorCalc[j]*1000/sensorMax[j];
-    }
-
-    // add bias
-    if(hasTurned)
-        thisCalWeight = 1; //RIGHT BIAS
-    else
-        thisCalWeight = 0; //LEFT BIAS
-
-    // if centered ignore other values
-    for(unsigned char k = 0; k < 8; k++){
-        calibrationWeightUsed[k] = calibrationWeights[thisCalWeight][k]; 
-    }
-
-    // calculate error
-    for(unsigned char k = 0; k < 8; k++){
-        calcError += sensorCalc[k] * calibrationWeightUsed[k];
-    }
-    calcError /= 8;
-    return;
-}
-// computes steering change according to error determined by weights on track
-void adjust_steer(){
-    if (calcError > 450) { // left wheel slower
+    // adjust the steering
+    if (calcError > LEFT_THRESHOLD) { // left wheel slower
         //TURN LEFT
         digitalWrite(left_dir_pin,HIGH); 
         digitalWrite(right_dir_pin,LOW); 
-        left_baseSpeed -= 10;
-        right_baseSpeed -= 10;
         if(left_baseSpeed < 0){
             left_baseSpeed *= -1;
         }
-    } else if(calcError < -400) { // right wheel slower
+    } else if(calcError < RIGHT_THRESHOLD) { // right wheel slower
         //TURN RIGHT
         digitalWrite(left_dir_pin,LOW); 
         digitalWrite(right_dir_pin,HIGH); 
-        right_baseSpeed -= 10;
-        left_baseSpeed -= 10;
         if(right_baseSpeed < 0){
             right_baseSpeed *= -1;
         }
     } else {
         //GO FORWARD 
-        right_baseSpeed = start_speed; //VS
-        left_baseSpeed = start_speed;
         digitalWrite(left_dir_pin,LOW); 
         digitalWrite(right_dir_pin,LOW); 
     }
-    return;
-}
 
-// rotate 180
-void rotate180(){
-    analogWrite(left_pwm_pin, 50);
-    analogWrite(right_pwm_pin, 50);
-    digitalWrite(left_dir_pin,LOW);    
-    digitalWrite(left_nslp_pin,HIGH);   
-    digitalWrite(right_dir_pin,HIGH);
-    digitalWrite(right_nslp_pin,HIGH);
+    prevError = calcError;
 
-    delay(1290); //VS og value 1310
-    analogWrite(left_pwm_pin, 50);
-    analogWrite(right_pwm_pin, 50);
-    digitalWrite(left_dir_pin,LOW);    
-    digitalWrite(left_nslp_pin,HIGH);   
-    digitalWrite(right_dir_pin,LOW);
-    digitalWrite(right_nslp_pin,HIGH);
-    return;
-}
+    analogWrite(left_pwm_pin,left_baseSpeed);
+    analogWrite(right_pwm_pin, right_baseSpeed);
 
-// calc initial PD
-int getPD(){
-    return calcError * Kp + (calcError - prevError) * Kd;
 }
